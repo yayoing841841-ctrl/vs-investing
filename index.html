@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>貯金だけ vs 投資あり 比較シミュレーター</title>
+  <style>
+    :root {
+      --bg-top: #eef6ff;
+      --bg-bottom: #dfeef1;
+      --panel: rgba(248, 252, 255, 0.86);
+      --panel-strong: rgba(255, 255, 255, 0.96);
+      --panel-dark: #183449;
+      --text: #122331;
+      --muted: #587082;
+      --line: #c6d9e5;
+      --accent: #1273a3;
+      --accent-strong: #0b5a81;
+      --accent-soft: #d8edf8;
+      --money: #0f8f7b;
+      --growth: #ff8a3d;
+      --difference: #d64545;
+      --warn: #a8512b;
+      --shadow: 0 24px 54px rgba(18, 35, 49, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Yu Gothic", "Hiragino Sans", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(18, 115, 163, 0.18), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(15, 143, 123, 0.14), transparent 26%),
+        linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
+    }
+
+    .page {
+      width: min(1200px, calc(100% - 28px));
+      margin: 20px auto 42px;
+    }
+
+    .hero,
+    .card,
+    .result-card {
+      background: var(--panel);
+      border: 1px solid rgba(18, 115, 163, 0.12);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 30px;
+      border-radius: 30px;
+      margin-bottom: 18px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -90px auto;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255, 138, 61, 0.18), rgba(255, 255, 255, 0));
+      pointer-events: none;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+      gap: 18px;
+      align-items: end;
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(18, 115, 163, 0.1);
+      color: var(--accent-strong);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(34px, 6vw, 62px);
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+    }
+
+    .hero-copy {
+      display: grid;
+      gap: 14px;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 760px;
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    .gift-note {
+      max-width: 760px;
+      padding: 14px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--accent-strong);
+      background: rgba(255, 255, 255, 0.56);
+      border: 1px solid rgba(18, 115, 163, 0.14);
+    }
+
+    .hero-points {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .hero-point {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-strong);
+      background: rgba(18, 115, 163, 0.1);
+      border: 1px solid rgba(18, 115, 163, 0.12);
+    }
+
+    .hero-panel {
+      display: grid;
+      gap: 14px;
+      padding: 20px;
+      border-radius: 24px;
+      color: #edf7ff;
+      background:
+        linear-gradient(160deg, rgba(24, 52, 73, 0.96), rgba(18, 115, 163, 0.92));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    .hero-panel-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+
+    .hero-panel-value {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      line-height: 1;
+    }
+
+    .hero-panel-note {
+      font-size: 13px;
+      line-height: 1.75;
+      color: rgba(237, 247, 255, 0.84);
+    }
+
+    .hero-mini-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .hero-mini {
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .hero-mini-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      opacity: 0.74;
+    }
+
+    .hero-mini-text {
+      margin-top: 6px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .card,
+    .result-card {
+      border-radius: 26px;
+      padding: 22px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .section-title {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .section-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(18, 115, 163, 0.1);
+      color: var(--accent-strong);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.44);
+      border: 1px solid rgba(18, 115, 163, 0.08);
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    .field label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .field span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px 16px;
+      font: inherit;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.9);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(18, 115, 163, 0.14);
+      transform: translateY(-1px);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 13px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #f5fbff;
+      box-shadow: 0 10px 24px rgba(18, 115, 163, 0.2);
+    }
+
+    .primary:hover {
+      background: var(--accent-strong);
+    }
+
+    .secondary {
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+    }
+
+    .mini-checklist,
+    .notes,
+    .summary,
+    .chart-area {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mini-check {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+
+    .mini-check::before {
+      content: "•";
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .note {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.52);
+      border: 1px solid rgba(18, 115, 163, 0.1);
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .result-ribbon {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #eef8ff;
+      background: var(--panel-dark);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .metric {
+      background: var(--panel-strong);
+      border: 1px solid rgba(18, 115, 163, 0.1);
+      border-radius: 22px;
+      padding: 18px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .metric.featured {
+      background:
+        linear-gradient(135deg, rgba(18, 115, 163, 0.12), rgba(255, 255, 255, 0.86)),
+        var(--panel-strong);
+    }
+
+    .metric-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .metric-value {
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .metric-value.savings {
+      color: var(--money);
+    }
+
+    .metric-value.investing {
+      color: var(--growth);
+    }
+
+    .metric-value.difference {
+      color: var(--difference);
+    }
+
+    .metric-note {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+
+    .chart-wrap {
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.54);
+      border: 1px solid rgba(18, 115, 163, 0.08);
+    }
+
+    .chart-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .chart-canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .chart-axis {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .status {
+      padding: 14px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      line-height: 1.75;
+      background: rgba(255, 255, 255, 0.56);
+      border: 1px dashed rgba(18, 115, 163, 0.22);
+    }
+
+    .status.warn {
+      color: var(--warn);
+      border-color: rgba(168, 81, 43, 0.22);
+      background: rgba(168, 81, 43, 0.06);
+    }
+
+    .footer {
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    @media (max-width: 920px) {
+      .hero-grid,
+      .layout,
+      .field-grid,
+      .summary-grid,
+      .hero-mini-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .page {
+        width: min(100% - 18px, 1200px);
+      }
+
+      .hero,
+      .card,
+      .result-card {
+        padding: 18px;
+        border-radius: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">比較で見えるお金の伸び方</div>
+          <h1>貯金だけ vs<br>投資あり</h1>
+          <p>同じ毎月の入金額でも、貯金だけで進める場合と、利回りを前提に積み立てる場合では、年数が経つほど差が広がります。金額差と推移を一目で比較できるシミュレーターです。</p>
+          <div class="gift-note">LINE特典として配るなら、「貯金だけだとどうなるか」と「投資もしたらどれくらい差が出るか」を、その場で比較してもらう使い方に向いています。</div>
+          <div class="hero-points">
+            <span class="hero-point">2パターンを同時比較</span>
+            <span class="hero-point">差額がすぐ分かる</span>
+            <span class="hero-point">推移グラフつき</span>
+          </div>
+        </div>
+
+        <aside class="hero-panel">
+          <div>
+            <div class="hero-panel-title">Feature</div>
+            <div class="hero-panel-value">差が見える比較設計</div>
+          </div>
+          <div class="hero-panel-note">最終金額だけでなく、年ごとの増え方も折れ線グラフで表示します。相談導線や教育コンテンツとして使いやすい構成です。</div>
+          <div class="hero-mini-grid">
+            <div class="hero-mini">
+              <div class="hero-mini-label">入力</div>
+              <div class="hero-mini-text">毎月の入金額、年数、利回り、初期資金</div>
+            </div>
+            <div class="hero-mini">
+              <div class="hero-mini-label">出力</div>
+              <div class="hero-mini-text">貯金額、投資額、差額、推移グラフ</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="layout">
+      <form class="card stack" id="simulatorForm">
+        <div>
+          <div class="section-head">
+            <div class="section-title">入力</div>
+            <div class="section-badge">1</div>
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label for="monthlyContribution">毎月の入金額</label>
+              <input id="monthlyContribution" type="number" min="0" step="1000" value="" placeholder="例: 30000">
+              <span>円 / 月</span>
+            </div>
+
+            <div class="field">
+              <label for="years">年数</label>
+              <input id="years" type="number" min="1" step="1" value="20">
+              <span>例: 20年</span>
+            </div>
+
+            <div class="field">
+              <label for="annualReturn">投資利回り</label>
+              <input id="annualReturn" type="number" min="0" max="100" step="0.1" value="5">
+              <span>年率 %</span>
+            </div>
+
+            <div class="field">
+              <label for="initialAssets">初期資金</label>
+              <input id="initialAssets" type="number" min="0" step="10000" value="" placeholder="例: 1000000">
+              <span>円</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" type="submit">比較する</button>
+          <button class="secondary" type="button" id="resetButton">初期値に戻す</button>
+        </div>
+
+        <div class="mini-checklist">
+          <div class="mini-check">毎月の入金額と初期資金を入れると、貯金だけの場合と投資ありの場合を同時に比較できます。</div>
+          <div class="mini-check">年数が長くなるほど、複利による差がどのくらい広がるかを視覚的に確認できます。</div>
+        </div>
+
+        <div class="notes">
+          <div class="note">使い方はシンプルです。毎月の入金額と初期資金を入れれば、最終金額と差額、年ごとの推移グラフが表示されます。</div>
+          <div class="note">このページは静的HTMLだけで動きます。サーバー不要で公開できるので、LPやLINE特典ページにも載せやすい構成です。</div>
+          <div class="note">計算は毎月末積立、年利を月利換算した複利前提です。税金、手数料、元本割れは考慮していません。</div>
+        </div>
+      </form>
+
+      <section class="result-card summary">
+        <div class="section-head">
+          <div class="section-title">出力</div>
+          <div class="section-badge">2</div>
+        </div>
+        <div class="result-ribbon">入力内容に合わせてリアルタイム更新</div>
+
+        <div class="summary-grid">
+          <article class="metric featured">
+            <div class="metric-title">差額</div>
+            <div class="metric-value difference" id="differenceAmount">¥0</div>
+            <div class="metric-note">投資ありの最終額から、貯金だけの最終額を差し引いた比較結果です。</div>
+          </article>
+
+          <article class="metric">
+            <div class="metric-title">貯金だけの最終額</div>
+            <div class="metric-value savings" id="savingsOnlyAmount">¥0</div>
+            <div class="metric-note">利回り 0% の前提で積み上げた場合の到達額です。</div>
+          </article>
+
+          <article class="metric">
+            <div class="metric-title">投資した場合の最終額</div>
+            <div class="metric-value investing" id="investingAmount">¥0</div>
+            <div class="metric-note">初期資金と毎月積立を複利で運用した場合の試算です。</div>
+          </article>
+        </div>
+
+        <div class="chart-area">
+          <div class="chart-wrap">
+            <div class="chart-head">
+              <div class="section-title">グラフ</div>
+              <div class="legend">
+                <span class="legend-item"><span class="legend-dot" style="background: var(--money);"></span>貯金だけ</span>
+                <span class="legend-item"><span class="legend-dot" style="background: var(--growth);"></span>投資あり</span>
+              </div>
+            </div>
+            <svg class="chart-canvas" id="chartSvg" viewBox="0 0 720 320" role="img" aria-label="貯金と投資の推移グラフ">
+              <rect x="0" y="0" width="720" height="320" rx="18" fill="rgba(255,255,255,0.5)"></rect>
+              <g id="gridLayer"></g>
+              <g id="axisLayer"></g>
+              <g id="lineLayer"></g>
+            </svg>
+            <div class="chart-axis">
+              <span>開始</span>
+              <span id="yearsLabel">20年後</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="status" id="statusMessage"></div>
+
+        <div class="footer">
+          公開するときは、この `index.html` を GitHub Pages や Netlify に置けば、そのままURLで配布できます。
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("simulatorForm");
+    const resetButton = document.getElementById("resetButton");
+
+    const monthlyContributionEl = document.getElementById("monthlyContribution");
+    const yearsEl = document.getElementById("years");
+    const annualReturnEl = document.getElementById("annualReturn");
+    const initialAssetsEl = document.getElementById("initialAssets");
+
+    const differenceAmountEl = document.getElementById("differenceAmount");
+    const savingsOnlyAmountEl = document.getElementById("savingsOnlyAmount");
+    const investingAmountEl = document.getElementById("investingAmount");
+    const yearsLabelEl = document.getElementById("yearsLabel");
+    const statusMessageEl = document.getElementById("statusMessage");
+
+    const gridLayer = document.getElementById("gridLayer");
+    const axisLayer = document.getElementById("axisLayer");
+    const lineLayer = document.getElementById("lineLayer");
+
+    const defaults = {
+      monthlyContribution: "",
+      years: 20,
+      annualReturn: 5,
+      initialAssets: ""
+    };
+
+    function formatCurrency(value) {
+      return new Intl.NumberFormat("ja-JP", {
+        style: "currency",
+        currency: "JPY",
+        maximumFractionDigits: 0
+      }).format(Math.round(value));
+    }
+
+    function hasRequiredInputs() {
+      return [
+        monthlyContributionEl.value,
+        yearsEl.value,
+        annualReturnEl.value,
+        initialAssetsEl.value
+      ].every((value) => String(value).trim() !== "");
+    }
+
+    function getMonthlyRate(annualRatePercent) {
+      return annualRatePercent / 100 / 12;
+    }
+
+    function simulateSavings(monthlyContribution, years, initialAssets) {
+      const points = [];
+      let balance = initialAssets;
+      points.push({ label: "開始", value: balance });
+
+      for (let year = 1; year <= years; year += 1) {
+        balance += monthlyContribution * 12;
+        points.push({ label: `${year}年`, value: balance });
+      }
+
+      return points;
+    }
+
+    function simulateInvesting(monthlyContribution, years, annualReturn, initialAssets) {
+      const monthlyRate = getMonthlyRate(annualReturn);
+      const points = [];
+      let balance = initialAssets;
+      points.push({ label: "開始", value: balance });
+
+      for (let year = 1; year <= years; year += 1) {
+        for (let month = 0; month < 12; month += 1) {
+          balance = balance * (1 + monthlyRate) + monthlyContribution;
+        }
+        points.push({ label: `${year}年`, value: balance });
+      }
+
+      return points;
+    }
+
+    function buildPath(points, maxValue) {
+      const left = 56;
+      const top = 24;
+      const width = 620;
+      const height = 230;
+
+      return points.map((point, index) => {
+        const x = left + (width * index) / Math.max(points.length - 1, 1);
+        const y = top + height - (point.value / maxValue) * height;
+        return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+      }).join(" ");
+    }
+
+    function renderChart(savingsPoints, investingPoints) {
+      const allValues = [...savingsPoints, ...investingPoints].map((point) => point.value);
+      const maxValue = Math.max(...allValues, 1);
+      const axisMax = maxValue * 1.08;
+
+      gridLayer.innerHTML = "";
+      axisLayer.innerHTML = "";
+      lineLayer.innerHTML = "";
+
+      for (let i = 0; i <= 4; i += 1) {
+        const y = 24 + (230 * i) / 4;
+        const value = axisMax - (axisMax * i) / 4;
+        const gridLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        gridLine.setAttribute("x1", "56");
+        gridLine.setAttribute("x2", "676");
+        gridLine.setAttribute("y1", y);
+        gridLine.setAttribute("y2", y);
+        gridLine.setAttribute("stroke", "rgba(88, 112, 130, 0.18)");
+        gridLine.setAttribute("stroke-width", "1");
+        gridLayer.appendChild(gridLine);
+
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("x", "48");
+        label.setAttribute("y", y + 4);
+        label.setAttribute("text-anchor", "end");
+        label.setAttribute("fill", "#587082");
+        label.setAttribute("font-size", "11");
+        label.textContent = `${Math.round(value / 10000)}万`;
+        axisLayer.appendChild(label);
+      }
+
+      const savingsPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      savingsPath.setAttribute("d", buildPath(savingsPoints, axisMax));
+      savingsPath.setAttribute("fill", "none");
+      savingsPath.setAttribute("stroke", "#0f8f7b");
+      savingsPath.setAttribute("stroke-width", "4");
+      savingsPath.setAttribute("stroke-linecap", "round");
+      lineLayer.appendChild(savingsPath);
+
+      const investingPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      investingPath.setAttribute("d", buildPath(investingPoints, axisMax));
+      investingPath.setAttribute("fill", "none");
+      investingPath.setAttribute("stroke", "#ff8a3d");
+      investingPath.setAttribute("stroke-width", "4");
+      investingPath.setAttribute("stroke-linecap", "round");
+      lineLayer.appendChild(investingPath);
+    }
+
+    function renderEmptyState() {
+      differenceAmountEl.textContent = "¥0";
+      savingsOnlyAmountEl.textContent = "¥0";
+      investingAmountEl.textContent = "¥0";
+      yearsLabelEl.textContent = `${yearsEl.value || defaults.years}年後`;
+      statusMessageEl.className = "status";
+      statusMessageEl.textContent = "毎月の入金額と初期資金を入れると、貯金だけと投資ありの差が表示されます。";
+      renderChart(
+        [{ label: "開始", value: 0 }, { label: "1年", value: 0 }],
+        [{ label: "開始", value: 0 }, { label: "1年", value: 0 }]
+      );
+    }
+
+    function simulate() {
+      if (!hasRequiredInputs()) {
+        renderEmptyState();
+        return;
+      }
+
+      const monthlyContribution = Number(monthlyContributionEl.value);
+      const years = Number(yearsEl.value);
+      const annualReturn = Number(annualReturnEl.value);
+      const initialAssets = Number(initialAssetsEl.value);
+
+      if ([monthlyContribution, years, annualReturn, initialAssets].some((value) => Number.isNaN(value))) {
+        throw new Error("未入力または不正な値があります。");
+      }
+
+      if (monthlyContribution < 0 || years <= 0 || annualReturn < 0 || initialAssets < 0) {
+        throw new Error("年数は1以上、その他は0以上で入力してください。");
+      }
+
+      const savingsPoints = simulateSavings(monthlyContribution, years, initialAssets);
+      const investingPoints = simulateInvesting(monthlyContribution, years, annualReturn, initialAssets);
+      const savingsFinal = savingsPoints[savingsPoints.length - 1].value;
+      const investingFinal = investingPoints[investingPoints.length - 1].value;
+      const difference = investingFinal - savingsFinal;
+
+      differenceAmountEl.textContent = formatCurrency(difference);
+      savingsOnlyAmountEl.textContent = formatCurrency(savingsFinal);
+      investingAmountEl.textContent = formatCurrency(investingFinal);
+      yearsLabelEl.textContent = `${years}年後`;
+      statusMessageEl.className = "status";
+      statusMessageEl.textContent = `${years}年間で、投資ありは貯金だけより ${formatCurrency(difference)} 上振れする試算です。毎月の入金額が同じでも、年数が長いほど差が開きやすくなります。`;
+
+      renderChart(savingsPoints, investingPoints);
+    }
+
+    function resetForm() {
+      monthlyContributionEl.value = defaults.monthlyContribution;
+      yearsEl.value = defaults.years;
+      annualReturnEl.value = defaults.annualReturn;
+      initialAssetsEl.value = defaults.initialAssets;
+      simulate();
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      try {
+        simulate();
+      } catch (error) {
+        statusMessageEl.className = "status warn";
+        statusMessageEl.textContent = error.message;
+      }
+    });
+
+    [monthlyContributionEl, yearsEl, annualReturnEl, initialAssetsEl].forEach((element) => {
+      element.addEventListener("input", () => {
+        try {
+          simulate();
+        } catch (error) {
+          statusMessageEl.className = "status warn";
+          statusMessageEl.textContent = error.message;
+        }
+      });
+    });
+
+    resetButton.addEventListener("click", resetForm);
+
+    renderEmptyState();
+  </script>
+</body>
+</html>
